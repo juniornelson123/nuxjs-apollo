@@ -1,23 +1,14 @@
 <template>
   <section class="container">
     <div>
-      <app-logo/>
       <h1 class="title">
-        example_apollo
+        Estados
       </h1>
-      <h2 class="subtitle">
-        Nuxt.js project
-      </h2>
-      <div class="links">
-        <a
-          href="https://nuxtjs.org/"
-          target="_blank"
-          class="button--green">Documentation</a>
-        <a
-          href="https://github.com/nuxt/nuxt.js"
-          target="_blank"
-          class="button--grey">GitHub</a>
-      </div>
+      <ul class="list">
+        <li v-for="state in states" :key="state.name" class="item">
+          {{ state.name }}
+        </li>
+      </ul>
     </div>
   </section>
 </template>
@@ -25,6 +16,8 @@
 <script>
 import AppLogo from '~/components/AppLogo.vue'
 import states from '~/graphql/query/states.gql'
+import sub_states from '~/graphql/subscription/sub_states.gql'
+
 export default {
   components: {
     AppLogo
@@ -33,13 +26,23 @@ export default {
     states: {
       prefetch: true,
       query: states,
+      subscriveToMode: {
+        document: sub_states,
+        updateQuery: (prev, {subData}) => {
+          console.log(subData)
+          return{
+
+            states: [...states, subData.data.subStates]
+          }
+        }
+      }
     },
   },
 
 }
 </script>
 
-<style>
+<style lang="scss">
 .container {
   min-height: 100vh;
   display: flex;
@@ -67,6 +70,21 @@ export default {
 
 .links {
   padding-top: 15px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  list-style: none;
+
+  .item {
+    color: #526488;
+    font-size: 24px;
+    font-weight: bold;
+  }
+
 }
 </style>
 

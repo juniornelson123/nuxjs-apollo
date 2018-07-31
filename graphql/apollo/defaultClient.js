@@ -1,31 +1,35 @@
 import { ApolloLink } from 'apollo-link'
 import { setContext } from 'apollo-link-context'
 import { HttpLink } from 'apollo-link-http'
-import { InMemoryCache } from 'apollo-cache-inmemory'
-import { parse } from 'cookie'
+
+import * as AbsintheSocket from '@absinthe/socket'
+import { createAbsintheSocketLink } from "@absinthe/socket-apollo-link";
+import { Socket as PhoenixSocket } from "phoenix";
 import ApolloLogger from './ApolloLogger'
+import { hasSubscription } from "@jumpn/utils-graphql";
 
-// export default ctx => {
+function createLink() {
+  const uri = "http://localhost:4000/api"
+  const wsUri = "ws://localhost:4000/socket"
 
-//   const httpLink = new HttpLink({
-//     uri: "http://localhost:4000/api",
-//     credentials: 'same-origin',
-//   })
+  if (process.browser) {
+    return createAbsintheSocketLink(AbsintheSocket.create(
+      new PhoenixSocket(wsUri)
+    ))
+  }
 
-
-
-//   return {
-//     link: httpLink,
-//     cache: new InMemoryCache(),
-//   }
-// }
-
+  return new HttpLink({
+    uri,
+    credentials: "same-origin"
+  })
+}
 
 export default function (ctx) {
   const httpLink = new HttpLink({
     uri: "http://localhost:4000/api",
     credentials: 'same-origin',
   })
+
 
   const authLink = setContext((_, { headers }) => {
     const token = ""
@@ -39,8 +43,15 @@ export default function (ctx) {
 
   const loggerLink = process.env.NODE_ENV !== 'production' ? [new ApolloLogger()] : []
 
+  const link = new ApolloLink.split(
+    operation => hasSubscription(operation.query),
+    authLink.concat(createLink()),
+    authLink.concat(httpLink)
+  );
+
   return {
-    link: ApolloLink.from([...loggerLink, authLink, httpLink]),
+    // link: ApolloLink.from([...loggerLink, authLink, httpLink]),
+    link: link,
     // httpEndpoint: 'http://localhost:4000/api',
     getAuth: () => 'Bearer my-static-token' // use this method to overwrite functions
   }
