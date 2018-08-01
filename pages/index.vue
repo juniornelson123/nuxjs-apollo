@@ -26,13 +26,12 @@ export default {
     states: {
       prefetch: true,
       query: states,
-      subscriveToMode: {
+      subscribeToMore: {
         document: sub_states,
-        updateQuery: (prev, {subData}) => {
-          console.log(subData)
+        updateQuery: (prev, { subscriptionData }) => {
+          console.log(prev)
           return{
-
-            states: [...states, subData.data.subStates]
+            states: [...prev.states, subscriptionData.data.subStates]
           }
         }
       }
